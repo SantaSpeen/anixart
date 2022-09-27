@@ -17,4 +17,4 @@
    * 2
    * ...
 3. [CHANGELOG](./CHANGELOG.md)
-4. [LICENSE](./License.md)
+4. [LICENSE](./LICENSE.md)

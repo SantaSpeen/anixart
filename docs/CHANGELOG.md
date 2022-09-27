@@ -3,7 +3,7 @@
 ## Anixart API Wrapper
 
 ### 27.09.2022
-#### Version: 0.1, Build: 1
+#### Version: 0.0.1, Build: 1
 
 ##### Changes:
 

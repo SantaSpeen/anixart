@@ -1,7 +1,3 @@
----
-hide:
-  - toc
----
 # Anixart API wrapper
 ## Описание
 

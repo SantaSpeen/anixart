@@ -41,7 +41,7 @@ setup(
     install_requires=requires,
     license=about['__license__'],
     classifiers=[
-        "Development Status :: 1 - Planning",
+        "Development Status :: 3 - Alpha",
         "Intended Audience :: Developers",
         "Natural Language :: Russian",
         "Programming Language :: Python :: 3 :: Only",

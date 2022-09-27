@@ -3,8 +3,8 @@
 __title__ = 'anixart'
 __description__ = 'Wrapper for using the Anixart API.'
 __url__ = 'https://github.com/SantaSpeen/anixart'
-__version__ = '0.1.0'
-__build__ = 1
+__version__ = '0.2.1'
+__build__ = 3
 __author__ = 'SantaSpeen'
 __author_email__ = 'SantaSpeen@gmail.com'
 __license__ = "FPA"

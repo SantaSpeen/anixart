@@ -86,6 +86,8 @@ class AnixartRequestsHandler:
             if token is not None:
                 payload.update({"token": token})
         self.__log.debug(_log_name, 101, f"GET {method}; {payload}")
+        self.__session.headers.pop("Content-Type", None)
+        self.__session.headers.pop("Content-Length", None)
         res = self.__session.get(API_URL + method, params=payload)
         _parse_res_code(res, payload, "GET", self.__session.headers)
         return res

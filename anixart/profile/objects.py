@@ -100,6 +100,11 @@ class Profile:
 
     is_my_profile: bool = False
 
+    @classmethod
+    def from_response(cls, response: dict) -> "Profile":
+        profile = {"is_my_profile": response['is_my_profile'], **response['profile']}
+        return cls(**profile)
+
 class _login:
     pos_id: int
     id: int

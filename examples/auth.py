@@ -11,9 +11,8 @@ anix = AnixartAPI()  # По умолчанию используется гост
 
 if __name__ == '__main__':
     try:
-        raw = anix.execute("GET", endpoints.PROFILE.format(1))
-        profile = {"is_my_profile": raw['is_my_profile'], **raw['profile']}
-        print(Profile(**profile))
+        raw = anix.get(endpoints.PROFILE, 1)
+        print(Profile.from_response(raw))
     except AnixartAPIRequestError as e:
         print(e.message)
         print(e.code)

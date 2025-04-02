@@ -69,7 +69,7 @@ class AnixartAPI:
 
         return response
 
-    def post(self, method: str, payload: dict = None, is_json: bool = False, **kwargs):
+    def _post(self, method: str, payload: dict = None, is_json: bool = False, **kwargs):
         if payload is None:
             payload = {}
         url = API_URL + method
@@ -94,7 +94,7 @@ class AnixartAPI:
         self._session.headers["Content-Length"] = ""
         return self.__parse_response(res)
 
-    def get(self, method: str, payload: dict = None, **kwargs):
+    def _get(self, method: str, payload: dict = None, **kwargs):
         if payload is None:
             payload = {}
         if payload.get("token") is None:
@@ -110,11 +110,17 @@ class AnixartAPI:
     def execute(self, http_method, endpoint, **kwargs):
         http_method = http_method.upper()
         if http_method == "GET":
-            return self.get(endpoint, **kwargs)
+            return self._get(endpoint, **kwargs)
         elif http_method == "POST":
-            return self.post(endpoint, **kwargs)
+            return self._post(endpoint, **kwargs)
         else:
             raise AnixartAPIRequestError("Allow only GET and POST requests.")
+
+    def get(self, endpoint, *args, **kwargs):
+        return self.execute("GET", endpoint.format(*args), **kwargs)
+
+    def post(self, endpoint, *args, **kwargs):
+        return self.execute("POST", endpoint.format(*args), **kwargs)
 
     def __str__(self):
         return f'AnixartAPI(account={self.__account!r})'

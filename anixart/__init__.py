@@ -2,8 +2,10 @@
 
 from .__meta__ import  *
 
+from .api import AnixartAPI
+from .auth import AnixartAccount, AnixartAccountToken, AnixartAccountSaved
+
 from .endpoints import *
-from .api.api import AnixartUserAccount, AnixartAPI
 
 from . import enums
 from . import exceptions

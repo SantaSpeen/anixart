@@ -2,7 +2,7 @@
 import requests
 
 from .__meta__ import __version__, __build__
-from .auth import AnixartAccount
+from .auth import AnixartAccount, AnixartAccountGuest
 from .enums import AnixartApiErrors
 from .endpoints import API_URL
 from .exceptions import AnixartAPIRequestError, AnixartAPIError
@@ -11,7 +11,9 @@ from .exceptions import AnixartInitError
 
 class AnixartAPI:
 
-    def __init__(self, account: AnixartAccount):
+    def __init__(self, account: AnixartAccount = None):
+        if account is None:
+            account = AnixartAccountGuest()
         if not isinstance(account, AnixartAccount):
             raise AnixartInitError(f'Use class "AnixartAccount" for user. But {type(account)} given.')
 
@@ -19,6 +21,19 @@ class AnixartAPI:
 
         self.__token = account.token
 
+        self._session = account.session
+        self._session.headers = {
+            'User-Agent': f'AnixartPyAPI/{__version__}-{__build__} (Linux; Android 15; AnixartPyAPI Build/{__build__})'
+        }
+
+        self.__account._set_api(self)
+        self.__account.login()
+
+    def use_account(self, account: AnixartAccount):
+        if not isinstance(account, AnixartAccount):
+            raise AnixartInitError(f'Use class "AnixartAccount" for user. But {type(account)} given.')
+        self.__account = account
+        self.__token = account.token
         self._session = account.session
         self._session.headers = {
             'User-Agent': f'AnixartPyAPI/{__version__}-{__build__} (Linux; Android 15; AnixartPyAPI Build/{__build__})'
@@ -32,11 +47,11 @@ class AnixartAPI:
         if res.status_code != 200:
             e = AnixartAPIRequestError("Bad Request: Invalid request parameters.")
             e.message = (
-                f"Bad Request: Invalid request parameters."
-                f"Request: {res.request.method} {res.url}"
-                f"Status code: {res.status_code}"
-                f"Response: {res.text}"
-                f"Client headers: {self._session.headers}"
+                f"Bad Request: Invalid request parameters.\n"
+                f"Request: {res.request.method} {res.url}\n"
+                f"Status code: {res.status_code}\n"
+                f"Response: {res.text}\n"
+                f"Client headers: {self._session.headers}\n"
                 f"Client payload: {res.request.body}"
             )
             e.code = 400
@@ -46,13 +61,14 @@ class AnixartAPI:
         except ValueError:
             raise AnixartAPIError("Failed to parse JSON response")
 
+        print(response)
         if response['code'] != 0:
             code = response['code']
             if code in AnixartApiErrors:
-                e = AnixartAPIError(f"AnixartAPI send error. message={AnixartApiErrors[code]}")
-                e.message = AnixartApiErrors[code]
+                e = AnixartAPIError(f"AnixartAPI send error: {AnixartApiErrors(code).name}")
+                e.message = AnixartApiErrors(code).name
             else:
-                e = AnixartAPIError(f"AnixartAPI send unknown error. code={response['code']}")
+                e = AnixartAPIError(f"AnixartAPI send unknown error, code: {response['code']}")
             e.code = response['code']
             raise e
 
@@ -73,8 +89,8 @@ class AnixartAPI:
                 url += "?token=" + token
         kwargs = {"url": url}
         if is_json:
-            self._session.headers.update({"Content-Type": "application/json; charset=UTF-8"})
-            self._session.headers.update({"Content-Length": str(len(str(payload)))})
+            self._session.headers["Content-Type"] = "application/json; charset=UTF-8"
+            self._session.headers["Content-Length"] = str(len(payload))
             kwargs.update({"json": payload})
         else:
             kwargs.update({"data": payload})
@@ -94,7 +110,6 @@ class AnixartAPI:
             if token is not None:
                 payload.update({"token": token})
         res = self._session.get(API_URL + method, params=payload)
-
         return self.__parse_response(res)
 
     def execute(self, http_method, endpoint, **kwargs):

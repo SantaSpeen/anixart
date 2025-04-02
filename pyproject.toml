@@ -1,6 +1,6 @@
 [project]
 name = "anixart"
-version = "1.0.1"
+version = "0.2.2"
 description = "Wrapper for using the Anixart API."
 authors = [
     {name = "SantaSpeen",email = "santaspeen@gmail.com"}

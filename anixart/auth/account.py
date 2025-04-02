@@ -28,14 +28,14 @@ class AnixartAccount:
     def token(self):
         return self._token
 
-    def to_file(self, filename: str | Path):
+    def to_file(self, filename: str | Path) -> "AnixartAccountSaved":
         """Save the account information to a file."""
         acc = AnixartAccountSaved.from_account(filename, self)
         acc.save()
         return acc
 
     @classmethod
-    def from_file(cls, filename: str | Path):
+    def from_file(cls, filename: str | Path) -> "AnixartAccountSaved":
         """Load the account information from a file."""
         acc = AnixartAccountSaved(filename)
         acc.load()

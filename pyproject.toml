@@ -1,6 +1,6 @@
 [project]
 name = "anixart"
-version = "0.2.2"
+version = "0.3.0.1"
 description = "Wrapper for using the Anixart API."
 authors = [
     {name = "SantaSpeen",email = "santaspeen@gmail.com"}
@@ -16,7 +16,7 @@ repository = "https://github.com/SantaSpeen/anixart"
 
 [tool.poetry]
 classifiers = [
-    "Development Status :: 3 - Alpha",
+    "Development Status :: 2 - Pre-Alpha",
     "Topic :: Software Development :: Libraries :: Python Modules"
 ]
 

@@ -3,18 +3,30 @@ from pathlib import Path
 
 import requests
 
+from anixart import endpoints
 from anixart.exceptions import AnixartInitError
 
 
 class AnixartAccount:
+    guest = False
     def __init__(self, username: str, password: str):
         self._username = username
         self._password = password
         if not isinstance(username, str) or not isinstance(password, str):
             raise AnixartInitError("Auth data must be strings.")
 
+        self._id = None
         self._token = None
         self._session = requests.Session()
+
+        self._api = None
+
+    def _set_api(self, api):
+        self._api = api
+
+    @property
+    def id(self):
+        return self._id
 
     @property
     def username(self):
@@ -43,7 +55,12 @@ class AnixartAccount:
 
     def login(self):
         """Login to Anixart and return the token."""
-        # TODO: Implement login logic here
+        payload = {"login": self.username, "password": self._password}
+        res = self._api.post(endpoints.SING_IN, payload)
+        uid = res["profile"]["id"]
+        token = res["profileToken"]["token"]
+        self._id = uid
+        self._token = token
 
     def __str__(self):
         return f'AnixartAccount(login={self._username!r}, password={"*" * len(self._password)!r})'
@@ -60,8 +77,7 @@ class AnixartAccountSaved(AnixartAccount):
     def save(self):
         """Save the account information to a file."""
         data = {
-            "username": self._username,
-            "password": self._password,
+            "id": self._id,
             "token": self._token
         }
         with open(self._file, 'w') as f:
@@ -73,11 +89,11 @@ class AnixartAccountSaved(AnixartAccount):
             raise AnixartInitError(f"Account file {self._file} does not exist.")
         with open(self._file, 'r') as f:
             data = json.load(f)
+            self._id = data.get("id")
             self._username = data.get("username")
-            self._password = data.get("password")
             self._token = data.get("token")
-        if not self._username or not self._password:
-            raise AnixartInitError("Login and password must be provided in the account file.")
+        if not self._id or not self._token:
+            raise AnixartInitError("id and token must be provided in the account file.")
 
     @classmethod
     def from_account(cls, account_file: str | Path, account: AnixartAccount):
@@ -97,16 +113,14 @@ class AnixartAccountSaved(AnixartAccount):
     def __str__(self):
         return f'AnixartAccountSaved(account_file={self._file!r}")'
 
-class AnixartAccountToken(AnixartAccount):
+class AnixartAccountGuest(AnixartAccount):
+    guest = True
+    def __init__(self):
+        super().__init__("", "")
+        self._token = ""
 
-    def __init__(self, token):
-        super().__init__("mradx", "")  # Пасхалка)
-        self._token = token
-
-    def login(self):
-        """Login to Anixart and return information about the tokens."""
-        # TODO: Implement login logic here
-        pass
+    def login(self): ...
 
     def __str__(self):
-        return f'AnixartAccountToken(token={self._token!r}")'
+        return f'AnixartAccountGuest(token={self._token!r}")'
+

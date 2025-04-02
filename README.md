@@ -8,8 +8,9 @@
 
 ### Установка
 
-`pip install anixart`
-
+```shell
+pip install anixart
+```
 
 ### Как работать с библиотекой
 #### Вся документация в папке [docs](https://github.com/SantaSpeen/anixart/tree/master/docs) 

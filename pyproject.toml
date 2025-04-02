@@ -1,0 +1,25 @@
+[project]
+name = "anixart"
+version = "1.0.1"
+description = "Wrapper for using the Anixart API."
+authors = [
+    {name = "SantaSpeen",email = "santaspeen@gmail.com"}
+]
+license = {text = "FPA License"}
+readme = "README.md"
+requires-python = ">=3.10,<4.0"
+dependencies = ["requests (>=2.32.3,<3.0.0)"]
+dynamic = [ "classifiers" ]
+
+[project.urls]
+repository = "https://github.com/SantaSpeen/anixart"
+
+[tool.poetry]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Topic :: Software Development :: Libraries :: Python Modules"
+]
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"

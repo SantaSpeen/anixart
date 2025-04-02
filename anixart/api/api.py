@@ -3,7 +3,7 @@ import logging
 import requests
 
 from ..auth import AnixartAuth
-from ..errors import AnixartInitError, AnixartAPIRequestError
+from ..exceptions import AnixartInitError, AnixartAPIRequestError
 from ..request_handler import AnixartRequestsHandler
 
 _log_name = "file:%-29s -> %s" % ("<anixart.api:%-4i>", "%s")

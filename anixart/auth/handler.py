@@ -3,7 +3,7 @@ import logging
 import os.path
 
 from .endpoints import SING_IN, CHANGE_PASSWORD, PROFILE
-from .errors import AnixartAuthError
+from .exceptions import AnixartAuthError
 from .request_handler import AnixartRequestsHandler
 
 
@@ -47,20 +47,20 @@ class AnixartAuth(AnixartRequestsHandler):
             uid = config.get("id")
             token = config.get("token")
             if not self.get(PROFILE.format(uid), {"token": token}).json().get("is_my_profile") or \
-                    self.user.login != config.get("login"):
+                    self.user.__login != config.get("login"):
                 logging.getLogger("anixart.api.AnixAPI").debug("Invalid config file. Re login.")
             else:
                 self.user.id = uid
-                self.user.token = token
+                self.user.__token = token
                 return config
-        payload = {"login": self.user.login, "password": self.user.password}
+        payload = {"login": self.user.__login, "password": self.user.__password}
         res = self.post(SING_IN, payload)
         ready = _parse_response(res)
         uid = ready["profile"]["id"]
         token = ready["profileToken"]["token"]
         self.user.id = uid
-        self.user.token = token
-        self._save_config({"id": uid, "token": token, "login": self.user.login})
+        self.user.__token = token
+        self._save_config({"id": uid, "token": token, "login": self.user.__login})
         return ready
 
     def change_password(self, old, new):

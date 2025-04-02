@@ -4,9 +4,9 @@ import logging
 
 import requests
 
-from .__version__ import __version__, __build__
+from .__meta__ import __version__, __build__
 from .endpoints import API_URL
-from .errors import AnixartAPIRequestError, AnixartAPIError
+from .exceptions import AnixartAPIRequestError, AnixartAPIError
 _log_name = "file:%-28s -> %s" % ("<Anixart.request_handler:%-3i>", "%s")
 
 

@@ -12,7 +12,7 @@ class AnixartUserAccount:
             ~~~~~~~~~~~~~~~~~~~~~~~~~~~
             Usage:
             >>> user = AnixartUserAccount("login", "password", config_file="anixart_data.json")
-            >>> print(user.login)
+            >>> print(user.__login)
             Availible params:
             ~~~~~~~~~~~~~~~~~
             * login -> Your anixart nick

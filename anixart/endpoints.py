@@ -20,8 +20,8 @@ _AUTH_SING_IN_WITH_VK = "/auth/vk"  # {vkAccessToken}
 #  SETTINGS_RELEASE_TYPE
 
 # GET
-PROFILE = "/profile/{}"  # + profile id
-PROFILE_NICK_HISTORY = "/profile/login/history/all/{}/{}"  # profile id / page
+PROFILE = "/profile/{}"  # + profile id  (Токен нужен только что бы был is_my_profile)
+PROFILE_NICK_HISTORY = "/profile/login/history/all/{}/{}"  # profile id / page  (Токен не нужен)
 
 PROFILE_BLACKLIST = "/profile/blocklist/all/{}"  # page
 PROFILE_BLACKLIST_ADD = "/profile/blocklist/add/{}"  # profile id

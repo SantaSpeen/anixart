@@ -2,8 +2,8 @@ from enum import IntEnum
 
 class AnixartApiErrors(IntEnum):
     """ Error codes for AnixartApi authentication."""
-    INCORRECT_LOGIN = 1
-    INCORRECT_PASSWORD = 2
+    INCORRECT_LOGIN = 2
+    INCORRECT_PASSWORD = 3
 
 class AnixartComment(IntEnum):
     DISLIKE = 1

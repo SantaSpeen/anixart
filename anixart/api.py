@@ -17,22 +17,15 @@ class AnixartAPI:
         if not isinstance(account, AnixartAccount):
             raise AnixartInitError(f'Use class "AnixartAccount" for user. But {type(account)} given.')
 
-        self.__account = account
-
-        self.__token = account.token
-
-        self._session = account.session
-        self._session.headers = {
-            'User-Agent': f'AnixartPyAPI/{__version__}-{__build__} (Linux; Android 15; AnixartPyAPI Build/{__build__})'
-        }
-
-        self.__account._set_api(self)
-        self.__account.login()
+        self.use_account(account)
 
     def use_account(self, account: AnixartAccount):
         if not isinstance(account, AnixartAccount):
             raise AnixartInitError(f'Use class "AnixartAccount" for user. But {type(account)} given.')
         self.__account = account
+        self.__account._set_api(self)
+        self.__account.login()
+
         self.__token = account.token
         self._session = account.session
         self._session.headers = {
@@ -56,12 +49,14 @@ class AnixartAPI:
             )
             e.code = 400
             raise e
+        if not res.text:
+            raise AnixartAPIError("AnixartAPI send unknown error: Empty response. Is provided data correct?")
         try:
             response = res.json()
-        except ValueError:
+        except ValueError as e:
             raise AnixartAPIError("Failed to parse JSON response")
 
-        print(response)
+        # print(response)
         if response['code'] != 0:
             code = response['code']
             if code in AnixartApiErrors:

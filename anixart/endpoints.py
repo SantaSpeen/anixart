@@ -1,7 +1,85 @@
 # -*- coding: utf-8 -*-
+from dataclasses import dataclass, field
+from typing import Literal, Any
 
 
-API_URL = "https://api.anixart.tv"
+@dataclass
+class Endpoint:
+    path: str
+    method: Literal["GET", "POST"]
+    required_args: dict[str, type] = field(default_factory=dict)
+
+    _json = False
+    _API_ENDPOINT = "https://api.anixart.tv/"
+
+    def __post_init__(self):
+        if self.method not in ["GET", "POST"]:
+            raise ValueError("Method must be either GET or POST.")
+        if not isinstance(self.required_args, dict):
+            raise ValueError("Required arguments must be a dictionary.")
+        if not all(isinstance(v, type) for v in self.required_args.values()):
+            raise ValueError("All values in required arguments must be types.")
+
+    def _post(self, method: str, **kwargs):
+        headers = {}
+        url = self._API_ENDPOINT + method
+        if token:=kwargs.get("token"):
+            kwargs["token"] = token
+            url += f"?token={token}"
+
+        req_settings = {"url": url}
+        if self._json:
+            headers["Content-Type"] = "application/json; charset=UTF-8"
+            req_settings.update({"json": kwargs})
+        else:
+            req_settings.update({"data": kwargs})
+        return req_settings, headers
+
+    def _get(self, method: str, **kwargs):
+        headers = {}
+        url = self._API_ENDPOINT + method
+        if token:=kwargs.get("token"):
+            kwargs["token"] = token
+        req_settings = {"url": url, "params": kwargs}
+        return req_settings, headers
+
+    def _check_arguments(self, **kwargs):
+        """Check if all required arguments are present."""
+        missing_args = []  # (arg, reason)
+        for arg, arg_type in self.required_args.items():
+            if arg not in kwargs:
+                missing_args.append((arg, "missing"))
+            elif not isinstance(kwargs[arg], arg_type):
+                missing_args.append((arg, f"invalid type: {type(kwargs[arg])}"))
+        if missing_args:
+            pretty_args = ", ".join(f"{arg} ({reason})" for arg, reason in missing_args)
+            raise ValueError(f"Missing or invalid arguments: {pretty_args}")
+
+    def build_request(self, **kwargs) -> tuple[dict[str, dict[str, Any] | str], dict[str, str]]:
+        """
+        Build the request for the endpoint.
+        :param kwargs: Arguments to be passed to the endpoint.
+        :return: A tuple containing the HTTP method, headers, and request settings.
+        """
+        self._check_arguments(**kwargs)
+        if self.method == "POST":
+            return self._post(self.path, **kwargs)
+        if self.method == "GET":
+            return self._get(self.path, **kwargs)
+
+def endpoint(path: str, method: Literal["GET", "POST"], required_args: dict[str, type]) -> Endpoint:
+    return Endpoint(path, method, required_args)
+
+class AnixartAuthEndpoints:
+    """Anixart API authentication endpoints."""
+    login = endpoint("/auth/signIn", "POST", {"login": str, "password": str})
+
+class AnixartEndpoints:
+    """Anixart API endpoints."""
+
+    def __init__(self):
+        pass
+
 
 # ----------- #   AUTH   # ----------- #
 

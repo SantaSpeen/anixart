@@ -16,10 +16,13 @@ class ProfileRoles:
     pass
 
 @dataclass
-class ProfileFriendsPreview:
+class Profile:
     id: int
-    avatar: str
     login: str
+    avatar: str
+
+@dataclass
+class ProfileFriendsPreview(Profile):
     friend_count: int
     friend_status: int
     is_sponsor: bool
@@ -32,10 +35,7 @@ class ProfileFriendsPreview:
     badge_url: None
 
 @dataclass
-class Profile:
-    id: int
-    login: str
-    avatar: str
+class ProfileFull(Profile):
     status: str
     rating_score: int
     history: list[ProfileHistory]

@@ -4,19 +4,17 @@ import requests
 from .__meta__ import __version__, __build__
 from .auth import AnixartAccount, AnixartAccountGuest
 from .enums import AnixartApiErrors
-from .endpoints import API_URL
 from .exceptions import AnixartAPIRequestError, AnixartAPIError
 from .exceptions import AnixartInitError
 
+debug = True
 
 class AnixartAPI:
+    API_URL = "https://api.anixart.tv/"
 
     def __init__(self, account: AnixartAccount = None):
         if account is None:
             account = AnixartAccountGuest()
-        if not isinstance(account, AnixartAccount):
-            raise AnixartInitError(f'Use class "AnixartAccount" for user. But {type(account)} given.')
-
         self.use_account(account)
 
     def use_account(self, account: AnixartAccount):
@@ -37,6 +35,9 @@ class AnixartAPI:
         return self.__account
 
     def __parse_response(self, res: requests.Response):
+        if debug:
+            print(f"[D] -> {res.request.method} body='{res.request.body!s}' url='{res.url!s}'")
+            print(f"[D] <- {res.status_code}, {len(res.text)=}")
         if res.status_code != 200:
             e = AnixartAPIRequestError("Bad Request: Invalid request parameters.")
             e.message = (
@@ -56,7 +57,8 @@ class AnixartAPI:
         except ValueError as e:
             raise AnixartAPIError("Failed to parse JSON response")
 
-        # print(response)
+        if debug:
+            print(response)
         if response['code'] != 0:
             code = response['code']
             if code in AnixartApiErrors:
@@ -69,42 +71,26 @@ class AnixartAPI:
 
         return response
 
-    def _post(self, method: str, payload: dict = None, is_json: bool = False, **kwargs):
-        if payload is None:
-            payload = {}
-        url = API_URL + method
-        if payload.get("token") is None:
-            if self.__token is not None:
-                payload.update({"token": self.__token})
-                url += "?token=" + self.__token
-        else:
-            token = kwargs.get("token")
-            if token is not None:
-                payload.update({"token": token})
-                url += "?token=" + token
-        kwargs = {"url": url}
-        if is_json:
+    def _post(self, method: str, _json: bool = False, **kwargs):
+        url = self.API_URL + method
+        kwargs["token"] = kwargs.get("token", self.__token)
+        if kwargs["token"]:
+            url += f"?token={self.__token}"
+
+        req_settings = {"url": url}
+        if _json:
             self._session.headers["Content-Type"] = "application/json; charset=UTF-8"
-            self._session.headers["Content-Length"] = str(len(payload))
-            kwargs.update({"json": payload})
+            req_settings.update({"json": kwargs})
         else:
-            kwargs.update({"data": payload})
-        res = self._session.post(**kwargs)
-        self._session.headers["Content-Type"] = ""
-        self._session.headers["Content-Length"] = ""
+            req_settings.update({"data": kwargs})
+        res = self._session.post(**req_settings)
         return self.__parse_response(res)
 
-    def _get(self, method: str, payload: dict = None, **kwargs):
-        if payload is None:
-            payload = {}
-        if payload.get("token") is None:
-            if self.__token is not None:
-                payload.update({"token": self.__token})
-        else:
-            token = kwargs.get("token")
-            if token is not None:
-                payload.update({"token": token})
-        res = self._session.get(API_URL + method, params=payload)
+    def _get(self, method: str, **kwargs):
+        if self.__token:
+            kwargs["token"] = kwargs.get("token", self.__token)
+
+        res = self._session.get(self.API_URL + method, params=kwargs)
         return self.__parse_response(res)
 
     def execute(self, http_method, endpoint, **kwargs):

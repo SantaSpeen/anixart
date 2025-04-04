@@ -55,8 +55,7 @@ class AnixartAccount:
 
     def login(self):
         """Login to Anixart and return the token."""
-        payload = {"login": self.username, "password": self._password}
-        res = self._api.post(endpoints.SING_IN, payload)
+        res = self._api.post(endpoints.SING_IN, login=self.username, password=self._password)
         uid = res["profile"]["id"]
         token = res["profileToken"]["token"]
         self._id = uid

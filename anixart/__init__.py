@@ -3,9 +3,8 @@
 from .__meta__ import  *
 
 from .api import AnixartAPI
-from .auth import AnixartAccount, AnixartAccountGuest, AnixartAccountSaved
 
-from .endpoints import *
+from . import auth
 
 from . import enums
 from . import exceptions

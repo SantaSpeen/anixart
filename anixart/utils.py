@@ -2,12 +2,41 @@
 from dataclasses import dataclass, field
 from typing import Literal, Any
 
+from anixart.exceptions import AnixartAPIError
+
+
+@dataclass
+class BaseParseFactory:
+    code: int
+
+    _errors: dict[int, str]
+    _exception: type[AnixartAPIError]
+
+    def raise_if_error(self):
+        if self.code != 0:
+            error = self._errors.get(self.code)
+            if error:
+                raise error
+            else:
+                raise ValueError(f"Unknown error code: {self.code}")
+
+    @classmethod
+    def from_dict(cls, data: dict) -> "BaseParseFactory":
+        return cls(
+            code=data.get("code", 0),
+            _errors={},
+            _exception=AnixartAPIError,
+        )
+
 
 @dataclass
 class Endpoint:
     path: str
     method: Literal["GET", "POST"]
+    parse_factory: type[BaseParseFactory]
     required_args: dict[str, type] = field(default_factory=dict)
+    required_kwargs: dict[str, type] = field(default_factory=dict)
+
 
     _json = False
     _API_ENDPOINT = "https://api.anixart.tv/"
@@ -15,10 +44,22 @@ class Endpoint:
     def __post_init__(self):
         if self.method not in ["GET", "POST"]:
             raise ValueError("Method must be either GET or POST.")
-        if not isinstance(self.required_args, dict):
+        if not isinstance(self.required_kwargs, dict):
             raise ValueError("Required arguments must be a dictionary.")
-        if not all(isinstance(v, type) for v in self.required_args.values()):
+        if not all(isinstance(v, type) for v in self.required_kwargs.values()):
             raise ValueError("All values in required arguments must be types.")
+
+    @property
+    def is_get(self) -> bool:
+        return self.method == "GET"
+
+    @property
+    def is_post(self) -> bool:
+        return self.method == "POST"
+
+    @property
+    def is_json(self) -> bool:
+        return self._json
 
     def _post(self, method: str, **kwargs):
         headers = {}
@@ -48,125 +89,37 @@ class Endpoint:
         missing_args = []  # (arg, reason)
         for arg, arg_type in self.required_args.items():
             if arg not in kwargs:
-                missing_args.append((arg, "missing"))
+                missing_args.append((arg, "arg missing"))
             elif not isinstance(kwargs[arg], arg_type):
-                missing_args.append((arg, f"invalid type: {type(kwargs[arg])}"))
+                missing_args.append((arg, f"arg invalid type: {type(kwargs[arg])}"))
+        for arg, arg_type in self.required_kwargs.items():
+            if arg not in kwargs:
+                missing_args.append((arg, "kwarg missing"))
+            elif not isinstance(kwargs[arg], arg_type):
+                missing_args.append((arg, f"kwarg invalid type: {type(kwargs[arg])}"))
         if missing_args:
             pretty_args = ", ".join(f"{arg} ({reason})" for arg, reason in missing_args)
             raise ValueError(f"Missing or invalid arguments: {pretty_args}")
 
-    def build_request(self, **kwargs) -> tuple[dict[str, dict[str, Any] | str], dict[str, str]]:
+    def build_request(self, **kwargs) -> None | tuple[dict[str, dict[str, Any] | str], dict[Any, Any]] | tuple[
+        dict[str, dict[str, Any] | str], dict[str, str]]:
         """
         Build the request for the endpoint.
         :param kwargs: Arguments to be passed to the endpoint.
         :return: A tuple containing the HTTP method, headers, and request settings.
         """
         self._check_arguments(**kwargs)
+        args = {arg: kwargs[arg] for arg in self.required_args}
         if self.method == "POST":
-            return self._post(self.path, **kwargs)
+            return self._post(self.path.format(**args), **kwargs)
         if self.method == "GET":
-            return self._get(self.path, **kwargs)
-
-def endpoint(path: str, method: Literal["GET", "POST"], required_args: dict[str, type]) -> Endpoint:
-    return Endpoint(path, method, required_args)
-
-class AnixartAuthEndpoints:
-    """Anixart API authentication endpoints."""
-    login = endpoint("/auth/signIn", "POST", {"login": str, "password": str})
-
-class AnixartEndpoints:
-    """Anixart API endpoints."""
-
-    def __init__(self):
-        pass
+            return self._get(self.path.format(**args), **kwargs)
 
 
-# ----------- #   AUTH   # ----------- #
+def endpoint(path: str, method: Literal["GET", "POST"], parse_factory: type[BaseParseFactory], required_args: dict[str, type], required_kwargs: dict[str, type]) -> Endpoint:
+    return Endpoint(path, method, parse_factory, required_args, required_kwargs)
 
-# POST
-SING_UP = None  # Удалено дабы исключить автореги
-SING_IN = "/auth/signIn"
 
-# Not Checked
-# POST
-_AUTH_SING_IN_WITH_GOOGLE = "/auth/google"  # {googleIdToken} or {login, email, googleIdToken}
-_AUTH_SING_IN_WITH_VK = "/auth/vk"  # {vkAccessToken}
-
-# ----------- # PROFILE # ----------- #
-# TODO PROFILE: SETTINGS, SETTINGS_RELEASE, SETTINGS_RELEASE_FIRST,
-#  SETTINGS_COMMENTS, SETTINGS_COLLECTION, EDIT_AVATAR, SETTINGS_RELEASE_LIST,
-#  SETTINGS_RELEASE_TYPE
-
-# GET
-PROFILE = "/profile/{}"  # + profile id  (Токен нужен только что бы был is_my_profile)
-PROFILE_NICK_HISTORY = "/profile/login/history/all/{}/{}"  # profile id / page  (Токен не нужен)
-
-PROFILE_BLACKLIST = "/profile/blocklist/all/{}"  # page
-PROFILE_BLACKLIST_ADD = "/profile/blocklist/add/{}"  # profile id
-PROFILE_BLACKLIST_REMOVE = "/profile/blocklist/remove/{}"  # profile id
-
-FRIENDS = "/profile/friend/all/{}/{}"  # profile id / page
-FRIENDS_RQ_IN = "/profile/friend/requests/in/{}"  # page
-FRIENDS_RQ_OUT = "/profile/friend/requests/out/{}"  # page
-FRIENDS_RQ_IN_LAST = "/profile/friend/requests/in/last"
-FRIENDS_RQ_OUT_LAST = "/profile/friend/requests/out/last"
-FRIENDS_SEND = "/profile/friend/request/send/{}"  # profile id
-FRIENDS_REMOVE = "/profile/friend/request/remove/{}"  # profile id
-
-VOTE_VOTED = "/profile/vote/release/voted/{}/{}"  # profile id / page
-# Да, ребята из аниксарта не знают английский; ↓
-# noinspection SpellCheckingInspection
-VOTE_UNVENTED = "/profile/vote/release/unvoted/{}"  # page
-
-LISTS = "/profile/list/all/{}/{}/{}"  # profile id / list id / page
-
-SETTINGS_NOTIFICATION = "/profile/preference/notification/my"
-SETTINGS_NOTIFICATION_RELEASE = "/profile/preference/notification/episode/edit"
-SETTINGS_NOTIFICATION_RELEASE_FIRST = "/profile/preference/notification/episode/first/edit"
-SETTINGS_NOTIFICATION_COMMENTS = "/profile/preference/notification/comment/edit"
-SETTINGS_NOTIFICATION_COLLECTION = "/profile/preference/notification/my/collection/comment/edit"
-
-CHANGE_PASSWORD = "/profile/preference/password/change"
-
-# POST
-EDIT_STATUS = "/profile/preference/status/edit"
-EDIT_SOCIAL = "/profile/preference/social/edit"
-EDIT_AVATAR = "/profile/preference/avatar/edit"
-
-# {"profileStatusNotificationPreferences":[0 - favorite, + all in AnixList]}
-SETTINGS_NOTIFICATION_RELEASE_LIST = "/profile/preference/notification/status/edit"
-# {"profileTypeNotificationPreferences":[type ids]}
-SETTINGS_NOTIFICATION_RELEASE_TYPE = "/profile/preference/notification/type/edit"
-
-# Not Checked
-# GET
-PROFILE_SOCIAL = "/profile/social/{}"  # profile id
-
-FRIENDS_RECOMMENDATION = "/profile/friend/recommendations"
-FRIENDS_RQ_HIDE = "profile/friend/request/hide/{}"  # profile id
-
-SETTINGS_PROFILE = "/profile/preference/my"
-SETTINGS_PROFILE_CHANGE_EMAIL = "/profile/preference/email/change"  # {current_password, current, new}
-SETTINGS_PROFILE_CHANGE_EMAIL_CONFIRM = "/profile/preference/email/change/confirm"  # {current}
-
-# /profile/preference/social
-SETTINGS_PROFILE_STATUS_DELETE = "/profile/preference/status/delete"
-
-# POST
-PROFILE_PROCESS = "/profile/process/{}"  # profile id
-
-SETTINGS_PROFILE_CHANGE_LOGIN = "/profile/preference/email/login/confirm"  # {login}
-SETTINGS_PROFILE_CHANGE_LOGIN_INFO = "/profile/preference/email/login/info"  # {login}
-
-SETTINGS_PROFILE_BIND_GOOGLE = "/profile/preference/google/bind"  # {idToken, }
-SETTINGS_PROFILE_UNBIND_GOOGLE = "/profile/preference/google/unbind"
-SETTINGS_PROFILE_BIND_VK = "/profile/preference/google/bind"  # {accessToken, }
-SETTINGS_PROFILE_UNBIND_VK = "/profile/preference/google/unbind"
-
-SETTINGS_PROFILE_PRIVACY_COUNTS = "/profile/preference/privacy/counts/edit"
-SETTINGS_PROFILE_PRIVACY_FRIENDS_REQUESTS = "/profile/preference/privacy/friendRequests/edit"
-SETTINGS_PROFILE_PRIVACY_SOCIAL = "/profile/preference/privacy/social/edit"
-SETTINGS_PROFILE_PRIVACY_STATS = "/profile/preference/privacy/stats/edit"
 
 # ----------- #  COLLECTION  # ----------- #
 

@@ -1,13 +1,13 @@
 # -*- coding: utf-8 -*-
 
-class AnixartBasError(Exception): ...
+class AnixartBaseError(Exception): ...
 
 # Init errors
 
-class AnixartInitError(AnixartBasError, TypeError): ...
+class AnixartInitError(AnixartBaseError, TypeError): ...
 
 # API errors
-class AnixartAPIError(AnixartBasError):
+class AnixartAPIError(AnixartBaseError):
     message = "unknown error"
     code = 0
 

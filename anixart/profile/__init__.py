@@ -1,1 +1,1 @@
-from .objects import Profile, ProfileFull, ProfileVote, ProfileRoles, ProfileHistory, ProfileFriendsPreview
+from .factories import Profile, ProfileFull, ProfileVote, ProfileRoles, ProfileHistory, ProfileFriendsPreview

@@ -1,16 +1,41 @@
 # -*- coding: utf-8 -*-
+
 import requests
 
 from .__meta__ import __version__, __build__
 from .auth import AnixartAccount, AnixartAccountGuest
-from .enums import AnixartApiErrors
+from .endpoints_map import endpoints_map
 from .exceptions import AnixartAPIRequestError, AnixartAPIError
 from .exceptions import AnixartInitError
 
 debug = True
 
+class _ApiMethodGenerator:
+    def __init__(self, start_path, _callback: callable):
+        self._path = start_path
+        self._callback = _callback
+
+    def __setattr__(self, __name, __value):
+        raise TypeError(f"cannot set '{__name}' attribute of immutable type 'ApiMethodGenerator'")
+
+    def __getattr__(self, item):
+        self._path += f".{item}"
+        return self
+
+    def __call__(self, *args, **kwargs):
+        if debug:
+            print(f"[D] __call__ -> {self._path} args={args} kwargs={kwargs}")
+        return self._callback(self._path, *args, **kwargs)
+
+    def __str__(self):
+        return f"ApiMethodGenerator(path={self._path!r})"
+
+    def __repr__(self):
+        return f"<{self}>"
+
 class AnixartAPI:
-    API_URL = "https://api.anixart.tv/"
+
+    API_URL = "https://api.anixart.tv"
 
     def __init__(self, account: AnixartAccount = None):
         if account is None:
@@ -60,12 +85,7 @@ class AnixartAPI:
         if debug:
             print(response)
         if response['code'] != 0:
-            code = response['code']
-            if code in AnixartApiErrors:
-                e = AnixartAPIError(f"AnixartAPI send error: {AnixartApiErrors(code).name}")
-                e.message = AnixartApiErrors(code).name
-            else:
-                e = AnixartAPIError(f"AnixartAPI send unknown error, code: {response['code']}")
+            e = AnixartAPIError(f"AnixartAPI send unknown error, code: {response['code']}")
             e.code = response['code']
             raise e
 
@@ -93,7 +113,7 @@ class AnixartAPI:
         res = self._session.get(self.API_URL + method, params=kwargs)
         return self.__parse_response(res)
 
-    def execute(self, http_method, endpoint, **kwargs):
+    def _execute(self, http_method, endpoint, **kwargs):
         http_method = http_method.upper()
         if http_method == "GET":
             return self._get(endpoint, **kwargs)
@@ -102,11 +122,29 @@ class AnixartAPI:
         else:
             raise AnixartAPIRequestError("Allow only GET and POST requests.")
 
+    def __execute_endpoint_from_map(self, key, *args, **kwargs):
+        endpoint = endpoints_map.get(key)
+        if endpoint is None:
+            raise AnixartAPIError("Invalid endpoint.")
+        return self._execute_endpoint(endpoint, *args, **kwargs)
+
+    def _execute_endpoint(self, endpoint, *args, **kwargs):
+        req_settings, headers = endpoint.build_request(*args, **kwargs)
+        self._session.headers.update(headers)
+        if endpoint.is_post:
+            res = self._session.post(**req_settings)
+        else:
+            res = self._session.get(**req_settings)
+        return self.__parse_response(res)
+
     def get(self, endpoint, *args, **kwargs):
-        return self.execute("GET", endpoint.format(*args), **kwargs)
+        return self._execute("GET", endpoint.format(*args), **kwargs)
 
     def post(self, endpoint, *args, **kwargs):
-        return self.execute("POST", endpoint.format(*args), **kwargs)
+        return self._execute("POST", endpoint.format(*args), **kwargs)
+
+    def __getattr__(self, item):
+        return _ApiMethodGenerator(item, self.__execute_endpoint_from_map)
 
     def __str__(self):
         return f'AnixartAPI(account={self.__account!r})'

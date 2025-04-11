@@ -1,1 +1,1 @@
-from .account import AnixartAccount, AnixartAccountSaved, AnixartAccountGuest
+from .accounts import AnixartAccount, AnixartAccountSaved, AnixartAccountGuest
